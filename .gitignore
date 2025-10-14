@@ -1,0 +1,19 @@
+# Python virtual environment
+venv/
+.venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Local Database Files
+local_chroma_db/
+
+# Temporary files from uploads
+temp_*.pdf
+
+# IDE and OS specific files
+.vscode/
+.DS_Store
+
+.env
