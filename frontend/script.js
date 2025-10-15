@@ -17,16 +17,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// function updateKnowledgeBaseList() {
+        
+//     console.log("Updating knowledge base list with sources:", knowledgeBaseSources);
+
+//     const listContainer = document.getElementById('knowledgeBaseList');
+//     if (knowledgeBaseSources.length === 0) {
+//         listContainer.innerHTML = '<ul><li>No sources loaded yet.</li></ul>';
+//         return;
+//     }
+
+//     const ul = document.createElement('ul');
+//     knowledgeBaseSources.forEach(sourceName => {
+//         const li = document.createElement('li');
+//         // Add a small icon based on the source type
+//         const icon = sourceName.toLowerCase().endsWith('.pdf') ? '📄' : '🌐';
+//         li.textContent = `${icon} ${sourceName}`;
+//         ul.appendChild(li);
+//     });
+//     listContainer.innerHTML = '';
+//     listContainer.appendChild(ul);
+// }
+
 // To something like this (using the URL you copied):
 // const API_URL = "https://zqdv8lvl-8000.inc1.devtunnels.ms/api";
 // NEW: A global variable to store the conversation history
 let chatHistory = [];
-
+// let knowledgeBaseSources = [];
 
 async function uploadFile() {
     const fileInput = document.getElementById('pdfUpload');
     const status = document.getElementById('uploadStatus');
-    const spinner = document.querySelector('#uploadStatusContainer .spinner');
+    const spinner = document.getElementById('uploadSpinner');
     const uploadButton = document.getElementById('uploadButton');
     const chooseFileBtn = document.getElementById('chooseFileBtn');
 
@@ -35,14 +58,13 @@ async function uploadFile() {
         return;
     }
 
-    // --- Start of new logic ---
-    // Update UI to show processing is starting
+    const filename = fileInput.files[0].name; // Get filename
+
     status.textContent = 'Processing document... this may take a moment.';
     spinner.style.display = 'block';
     uploadButton.disabled = true;
     chooseFileBtn.disabled = true;
     fileInput.disabled = true;
-    // --- End of new logic ---
 
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
@@ -59,30 +81,30 @@ async function uploadFile() {
         }
 
         const result = await response.json();
+        status.textContent = result.message || "Upload successful!";
         
-        status.textContent = result.message || "Upload successful, but no message received.";
-        fileInput.value = ''; // Clear the file input
+        // --- NEW LOGIC ---
+        // if (!knowledgeBaseSources.includes(filename)) {
+        //     knowledgeBaseSources.push(filename);
+        // }
+        // updateKnowledgeBaseList();
+        // --- END NEW LOGIC ---
+        
+        fileInput.value = '';
 
     } catch (error) {
         console.error('An error occurred during upload:', error);
         status.textContent = `Upload failed: ${error.message}`;
     } finally {
-        // --- Start of new logic ---
-        // Always hide spinner and re-enable buttons when done
         spinner.style.display = 'none';
         uploadButton.disabled = false;
         chooseFileBtn.disabled = false;
         fileInput.disabled = false;
-        
-        // After success or failure, revert the 'Selected: ...' text if no new file is chosen
-        if (fileInput.files.length === 0) {
-             setTimeout(() => {
-                if (status.textContent.includes("successful") || status.textContent.includes("failed")) {
-                   status.textContent = 'Upload another document to add to the knowledge base.';
-                }
-            }, 3000); // Revert message after 3 seconds
-        }
-        // --- End of new logic ---
+        setTimeout(() => {
+            if (status.textContent.includes("successful") || status.textContent.includes("failed")) {
+                status.textContent = 'Upload another document to add to the knowledge base.';
+            }
+        }, 3000);
     }
 }
 
@@ -174,14 +196,13 @@ async function ingestWebsite() {
     const status = document.getElementById('ingestStatus');
     const spinner = document.getElementById('ingestSpinner');
     const ingestButton = document.getElementById('ingestUrlButton');
-    const url = urlInput.value;
+    const url = urlInput.value.trim();
 
     if (!url) {
         status.textContent = 'Please enter a URL first.';
         return;
     }
 
-    // Update UI to show processing is starting
     status.textContent = 'Ingesting content... this may take a moment.';
     spinner.style.display = 'block';
     ingestButton.disabled = true;
@@ -201,13 +222,20 @@ async function ingestWebsite() {
 
         const result = await response.json();
         status.textContent = result.message || "Ingestion successful!";
-        urlInput.value = ''; // Clear the input field
+
+        // // --- NEW LOGIC ---
+        // if (!knowledgeBaseSources.includes(url)) {
+        //     knowledgeBaseSources.push(url);
+        // }
+        // updateKnowledgeBaseList();
+        // // --- END NEW LOGIC ---
+
+        urlInput.value = '';
 
     } catch (error) {
         console.error('An error occurred during ingestion:', error);
         status.textContent = `Ingestion failed: ${error.message}`;
     } finally {
-        // Always hide spinner and re-enable button when done
         spinner.style.display = 'none';
         ingestButton.disabled = false;
         urlInput.disabled = false;

@@ -231,6 +231,37 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Add this CSS inside your <style> tag */
+
+        .kb-list-container {
+            height: 120px; /* Give it a fixed height */
+            overflow-y: auto;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 15px;
+        }
+
+        .kb-list-container ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .kb-list-container li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--subtle-text-color);
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .kb-list-container li:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 <body>
@@ -284,11 +315,17 @@
                 </div>
             </div>
             <div class="card">
-                <h2>Retrieved Context</h2>
-                <div id="sourceContainer" class="source-container">
-                    <p>Context used for the last answer will appear here...</p>
-                </div>
-            </div>
+            <h2>Knowledge Base</h2>
+
+            
+
+    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 25px 0;">
+
+    <h3>Context for Last Answer</h3>
+    <div id="sourceContainer" class="source-container">
+        <p>Context used for the last answer will appear here...</p>
+    </div>
+</div>
         </div>
     </div>
     
