@@ -6,12 +6,14 @@ from langchain_community.llms import Ollama
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader,WebBaseLoader # <-- Add WebBaseLoader
+
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.history_aware_retriever import create_history_aware_retriever
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 # from app.core.prompts import rag_prompt
+
 # --- Initialize Core Components ---
 vector_db_path = "local_chroma_db"
 client = chromadb.PersistentClient(path=vector_db_path)
@@ -68,6 +70,44 @@ print("✅ LLM model loaded.")
 vectorstore = None
 conversational_chain = None
 
+def ingest_website(url: str):
+    """
+    Loads data from a website URL, splits it into chunks, and ADDS it to the
+    persistent vector store.
+    """
+    global vectorstore, conversational_chain
+
+    print(f"Loading content from website: {url}")
+    loader = WebBaseLoader(url)
+    documents = loader.load()
+    
+    # Add the source metadata to each document chunk
+    for doc in documents:
+        doc.metadata["source"] = url
+
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    texts = text_splitter.split_documents(documents)
+    
+    print(f"Adding {len(texts)} new document chunks from the website to ChromaDB...")
+
+    # Same logic as ingest_documents to add to the existing store
+    if vectorstore:
+        vectorstore.add_documents(documents=texts)
+    else:
+        # This will likely not be hit if a PDF is uploaded first, but it's good practice
+        vectorstore = Chroma.from_documents(
+            documents=texts, 
+            embedding=embeddings,
+            client=client,
+            collection_name="langchain"
+        )
+    
+    print("✅ Website content added successfully!")
+
+    # Update the conversational_chain to use the retriever with the new data
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
+    conversational_chain = get_conversational_rag_chain(retriever)
+    print("✅ Conversational chain has been updated with the new retriever.")
 
 def ingest_documents(file_path: str):
     """

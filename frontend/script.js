@@ -166,3 +166,50 @@ async function askQuestion() {
         answerContainer.scrollTop = answerContainer.scrollHeight;
     }
 }
+
+// ADD THIS NEW FUNCTION TO YOUR SCRIPT.JS FILE
+
+async function ingestWebsite() {
+    const urlInput = document.getElementById('urlInput');
+    const status = document.getElementById('ingestStatus');
+    const spinner = document.getElementById('ingestSpinner');
+    const ingestButton = document.getElementById('ingestUrlButton');
+    const url = urlInput.value;
+
+    if (!url) {
+        status.textContent = 'Please enter a URL first.';
+        return;
+    }
+
+    // Update UI to show processing is starting
+    status.textContent = 'Ingesting content... this may take a moment.';
+    spinner.style.display = 'block';
+    ingestButton.disabled = true;
+    urlInput.disabled = true;
+
+    try {
+        const response = await fetch(`${API_URL}/ingest-website`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server responded with ${response.status}: ${errorText || response.statusText}`);
+        }
+
+        const result = await response.json();
+        status.textContent = result.message || "Ingestion successful!";
+        urlInput.value = ''; // Clear the input field
+
+    } catch (error) {
+        console.error('An error occurred during ingestion:', error);
+        status.textContent = `Ingestion failed: ${error.message}`;
+    } finally {
+        // Always hide spinner and re-enable button when done
+        spinner.style.display = 'none';
+        ingestButton.disabled = false;
+        urlInput.disabled = false;
+    }
+}

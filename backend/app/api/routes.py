@@ -23,6 +23,9 @@ class ChatResponse(BaseModel):
     answer: str
     source_documents: list
 
+class WebsiteRequest(BaseModel):
+    url: str
+
 @router.post("/upload", status_code=201)
 async def upload_document(file: UploadFile = File(...)):
     """Endpoint to upload a PDF file for ingestion."""
@@ -81,3 +84,16 @@ async def chat_with_rag(request: ChatRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ingest-website", status_code=201)
+async def ingest_website_endpoint(request: WebsiteRequest):
+    """Endpoint to ingest data from a website URL."""
+    try:
+        rag_core.ingest_website(request.url)
+        return {"message": f"Content from URL '{request.url}' ingested successfully."}
+    except Exception as e:
+        # For better debugging, you might want to log the full traceback
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to ingest website: {str(e)}")

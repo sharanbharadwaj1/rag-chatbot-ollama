@@ -239,7 +239,9 @@
         <h1>Knowledge Base Chatbot</h1>
         
         <div class="card">
-            <h2>Step 1: Upload a Document</h2>
+            <h2>Step 1: Build Your Knowledge Base</h2>
+
+            <h3>From a PDF Document</h3>
             <div class="input-group">
                 <label class="file-input-wrapper">
                     <button as="span" id="chooseFileBtn">
@@ -251,8 +253,20 @@
                 <button id="uploadButton" onclick="uploadFile()">Upload</button>
             </div>
             <div id="uploadStatusContainer" style="display: flex; align-items: center; margin-top: 15px;">
-                <div class="spinner" style="display: none;"></div>
-                <p id="uploadStatus" style="margin: 0 0 0 10px;">Upload a document to build your knowledge base.</p>
+                <div class="spinner" id="uploadSpinner" style="display: none;"></div>
+                <p id="uploadStatus" style="margin: 0 0 0 10px;">Upload documents to build the knowledge base.</p>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 25px 0;">
+
+            <h3>From a Website URL</h3>
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="Enter a website URL...">
+                <button id="ingestUrlButton" onclick="ingestWebsite()">Ingest</button>
+            </div>
+            <div id="ingestStatusContainer" style="display: flex; align-items: center; margin-top: 15px;">
+                <div class="spinner" id="ingestSpinner" style="display: none;"></div>
+                <p id="ingestStatus" style="margin: 0 0 0 10px;">Enter a URL to add its content.</p>
             </div>
         </div>
         
