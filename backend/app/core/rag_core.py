@@ -70,49 +70,47 @@ conversational_chain = None
 
 
 def ingest_documents(file_path: str):
+    """
+    Loads a PDF, splits it into chunks, and ADDS it to the
+    persistent vector store without deleting previous content.
+    """
     global vectorstore, conversational_chain
 
-    # 1. Release any existing objects holding a file lock.
-    # 1. Clear out the old data using the ChromaDB client
-    try:
-        # LangChain's default collection name is "langchain"
-        print("Deleting existing collection: langchain")
-        client.delete_collection(name="langchain")
-    except ValueError:
-        print("Collection 'langchain' not found, skipping deletion.")
-        pass # Collection doesn't exist on the first run, which is fine
-    except chromadb.errors.NotFoundError:
-        print("Collection 'langchain' did not exist. Skipping deletion.")
-        pass # If the collection doesn't exist, that's fine. We just continue.
-    except Exception as e:
-        print(f"An unexpected error occurred during collection deletion: {e}")
-        raise
-    
-    # 3. Load and process the new document.
+    # --- NO DELETION LOGIC HERE ---
+    # We will only add to the existing database.
+
+    # 1. Load and process the new document
     print(f"Loading document: {file_path}")
     loader = PyPDFLoader(file_path)
     documents = loader.load()
+    
+    for doc in documents:
+        doc.metadata["source"] = os.path.basename(file_path)
+
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     texts = text_splitter.split_documents(documents)
     
-    print("Ingesting documents into ChromaDB...")
-    
-    # 4. Create and assign the new vectorstore.
-    # 3. Create a new vector store with the new documents
-    vectorstore = Chroma.from_documents(
-        documents=texts, 
-        embedding=embeddings,
-        client=client, # Use the persistent client
-        collection_name="langchain" # Specify the collection name
-    )
-    # vectorstore.persist()
-    print("✅ Documents ingested and persisted successfully!")
+    print(f"Adding {len(texts)} new document chunks to ChromaDB...")
 
-    # 5. Create and assign the new conversational_chain.
+    # 2. Check if the vectorstore object exists in memory
+    if vectorstore:
+        # If it exists, just add the new documents
+        vectorstore.add_documents(documents=texts)
+    else:
+        # If it's the first run, create the vectorstore from scratch
+        vectorstore = Chroma.from_documents(
+            documents=texts, 
+            embedding=embeddings,
+            client=client,
+            collection_name="langchain"
+        )
+    
+    print("✅ Documents added successfully!")
+
+    # 3. Update the conversational_chain to use the retriever with the new data
     retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
     conversational_chain = get_conversational_rag_chain(retriever)
-    print("✅ Conversational chain has been updated with the new document retriever.")
-
+    print("✅ Conversational chain has been updated with the new retriever.")
     print(f"--- CHECKPOINT 1 [AFTER INGEST] --- Type of conversational_chain is: {type(conversational_chain)}")
 
 

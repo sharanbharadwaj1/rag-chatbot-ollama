@@ -4,129 +4,276 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RAG Chatbot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        /* General Body Styles */
+        /* --- UPDATED SOBER COLOR PALETTE --- */
+        :root {
+            --bg-color: #f5f7fa;
+            --card-bg-color: #ffffff;
+            --primary-color: #007bff;
+            --primary-hover-color: #0056b3;
+            --text-color: #343a40;
+            --subtle-text-color: #6c757d;
+            --border-color: #dee2e6;
+            --user-bubble-color: #007bff;
+            --bot-bubble-color: #e9ecef;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
         }
 
-        /* Main Container */
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        /* Card Styles for Sections */
         .card {
-            background-color: #ffffff;
+            background-color: var(--card-bg-color);
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
             padding: 25px;
-            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
-        /* Typography */
-        h1, h2, h3 {
-            color: #2c3e50;
-            border-bottom: 2px solid #e0e0e0;
-            padding-bottom: 10px;
+        h1, h2 {
+            color: var(--text-color);
             margin-top: 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
         }
 
         h1 {
             text-align: center;
-            font-size: 2.5em;
             border-bottom: none;
+            font-size: 2.8em;
+            color: var(--text-color);
+            margin-bottom: 20px;
         }
 
-        /* Form Elements */
-        input[type="text"], input[type="file"] {
-            width: calc(100% - 120px);
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+        .chat-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .chat-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-group {
+            display: flex;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            background-color: #fff;
+            border-radius: 6px 0 0 6px;
+            color: var(--text-color);
             font-size: 1em;
-            margin-right: 10px;
+            outline: none;
         }
 
         button {
             padding: 12px 20px;
-            background-color: #3498db;
+            background-color: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 1em;
-            transition: background-color 0.3s ease;
+            font-weight: 500;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-
+        
         button:hover {
-            background-color: #2980b9;
+            background-color: var(--primary-hover-color);
         }
 
-        /* Status and Container Styles */
-        #uploadStatus {
-            margin-top: 15px;
-            color: #7f8c8d;
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        button:disabled {
+            background-color: #adb5bd;
+            cursor: not-allowed;
+        }
+
+        .input-group button {
+            border-radius: 0 6px 6px 0;
         }
 
         .chat-container {
-            border: 1px solid #ccc;
+            height: 400px;
+            overflow-y: auto;
+            background-color: #fff;
+            border: 1px solid var(--border-color);
             padding: 15px;
-            height: 300px;
-            overflow-y: scroll;
-            background-color: #fafafa;
-            border-radius: 4px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            line-height: 1.5;
+        }
+
+        .user {
+            background-color: var(--user-bubble-color);
+            color: white;
+            border-bottom-right-radius: 4px;
+            align-self: flex-end;
+            text-align: right;
+        }
+
+        .bot {
+            background-color: var(--bot-bubble-color);
+            color: var(--text-color);
+            border-bottom-left-radius: 4px;
+            align-self: flex-start;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background-color: var(--subtle-text-color);
+            border-radius: 50%;
+            animation: pulse 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes pulse {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
         }
 
         .source-container {
-            border: 1px solid #eee;
-            background-color: #f8f8f8;
+            font-size: 0.85em;
+            color: var(--subtle-text-color);
+            height: 400px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid var(--border-color);
             padding: 15px;
-            height: 200px;
-            overflow-y: scroll;
-            font-size: 0.9em;
-            color: #555;
-            border-radius: 4px;
-            white-space: pre-wrap; /* Helps in formatting the context text */
-        }
-        
-        .chat-container p, .source-container p {
-            margin-top: 0;
+            border-radius: 8px;
         }
 
+        .source-container div {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .source-container strong { color: var(--text-color); }
+        .source-container p { white-space: pre-wrap; word-wrap: break-word; }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            overflow: hidden;
+        }
+        
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        #uploadStatus {
+            margin-top: 15px;
+            color: var(--subtle-text-color);
+            font-style: italic;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+
     <div class="container">
-        <h1>RAG Chatbot</h1>
+        <h1>Knowledge Base Chatbot</h1>
         
         <div class="card">
-            <h2>Upload PDF Document</h2>
-            <input type="file" id="pdfUpload" accept=".pdf">
-            <button onclick="uploadFile()">Upload</button>
-            <p id="uploadStatus">Upload a document to get started.</p>
+            <h2>Step 1: Upload a Document</h2>
+            <div class="input-group">
+                <label class="file-input-wrapper">
+                    <button as="span" id="chooseFileBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/></svg>
+                        Choose PDF
+                    </button>
+                    <input type="file" id="pdfUpload" accept=".pdf">
+                </label>
+                <button id="uploadButton" onclick="uploadFile()">Upload</button>
+            </div>
+            <div id="uploadStatusContainer" style="display: flex; align-items: center; margin-top: 15px;">
+                <div class="spinner" style="display: none;"></div>
+                <p id="uploadStatus" style="margin: 0 0 0 10px;">Upload a document to build your knowledge base.</p>
+            </div>
         </div>
         
-        <div class="card">
-            <h2>Ask a Question</h2>
-            <input type="text" id="chatInput" placeholder="Ask a question about the document..." size="50">
-            <button onclick="askQuestion()">Ask</button>
-            
-            <h3>Conversation:</h3>
-            <div id="answerContainer" class="chat-container">
-                <p>...</p>
+        <div class="chat-section">
+            <div class="card">
+                <h2>Step 2: Ask a Question</h2>
+                <div id="answerContainer" class="chat-container">
+                    </div>
+                <div class="input-group" style="margin-top: 20px;">
+                    <input type="text" id="chatInput" placeholder="Ask a question about the document(s)...">
+                    <button id="askButton" onclick="askQuestion()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/></svg>
+                        Ask
+                    </button>
+                </div>
             </div>
-            
-            <h3>Retrieved Context (Sources):</h3>
-            <div id="sourceContainer" class="source-container">
-                <p>Context used for the last answer will appear here...</p>
+            <div class="card">
+                <h2>Retrieved Context</h2>
+                <div id="sourceContainer" class="source-container">
+                    <p>Context used for the last answer will appear here...</p>
+                </div>
             </div>
         </div>
     </div>

@@ -1,8 +1,24 @@
-// const API_URL = "http://localhost:8000/api"; // This will be our backend URL
+const API_URL = "http://localhost:8000/api"; // This will be our backend URL
 
+document.addEventListener('DOMContentLoaded', () => {
+    const fileInput = document.getElementById('pdfUpload');
+    const uploadStatus = document.getElementById('uploadStatus');
 
+    // This function runs whenever the user selects a file
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            // If a file is chosen, display its name
+            uploadStatus.textContent = `Selected: ${this.files[0].name}`;
+            uploadStatus.style.color = '#e0e0e0'; // Use a brighter color for visibility
+        } else {
+            // If no file is chosen (e.g., the user clicks "cancel")
+            uploadStatus.textContent = 'Upload a document to build your knowledge base.';
+            uploadStatus.style.color = 'var(--subtle-text-color)'; // Revert to the default color
+        }
+    });
+});
 // To something like this (using the URL you copied):
-const API_URL = "https://zqdv8lvl-8000.inc1.devtunnels.ms/api";
+// const API_URL = "https://zqdv8lvl-8000.inc1.devtunnels.ms/api";
 // NEW: A global variable to store the conversation history
 let chatHistory = [];
 
@@ -10,66 +26,102 @@ let chatHistory = [];
 async function uploadFile() {
     const fileInput = document.getElementById('pdfUpload');
     const status = document.getElementById('uploadStatus');
+    const spinner = document.querySelector('#uploadStatusContainer .spinner');
+    const uploadButton = document.getElementById('uploadButton');
+    const chooseFileBtn = document.getElementById('chooseFileBtn');
 
     if (fileInput.files.length === 0) {
         status.textContent = 'Please select a file first.';
         return;
     }
 
+    // --- Start of new logic ---
+    // Update UI to show processing is starting
+    status.textContent = 'Processing document... this may take a moment.';
+    spinner.style.display = 'block';
+    uploadButton.disabled = true;
+    chooseFileBtn.disabled = true;
+    fileInput.disabled = true;
+    // --- End of new logic ---
+
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
 
-    status.textContent = 'Uploading...';
     try {
         const response = await fetch(`${API_URL}/upload`, {
             method: 'POST',
             body: formData,
-    });
+        });
 
-    // Step 1: Check for HTTP errors (e.g., 404 Not Found, 500 Internal Server Error)
         if (!response.ok) {
-            // Try to get a more detailed error message from the response body
-            const errorText = await response.text(); // Use .text() as we can't assume JSON
+            const errorText = await response.text();
             throw new Error(`Server responded with ${response.status}: ${errorText || response.statusText}`);
-    }
+        }
 
         const result = await response.json();
+        
+        status.textContent = result.message || "Upload successful, but no message received.";
+        fileInput.value = ''; // Clear the file input
 
-    // Step 2: Handle the successful JSON response
-    // Checks for FastAPI's validation error format
-        if (result.detail) {
-            status.textContent = `Error: ${result.detail}`;
-        } else {
-            status.textContent = result.message || "Upload successful, but no message received.";
-        }
-        }
-    catch (error) {
-        // Step 3: Log the full technical error to the console for debugging
+    } catch (error) {
         console.error('An error occurred during upload:', error);
-
-        // Step 4: Display a user-friendly message in the UI
-        // This now catches both network errors and the server errors we threw above
         status.textContent = `Upload failed: ${error.message}`;
+    } finally {
+        // --- Start of new logic ---
+        // Always hide spinner and re-enable buttons when done
+        spinner.style.display = 'none';
+        uploadButton.disabled = false;
+        chooseFileBtn.disabled = false;
+        fileInput.disabled = false;
+        
+        // After success or failure, revert the 'Selected: ...' text if no new file is chosen
+        if (fileInput.files.length === 0) {
+             setTimeout(() => {
+                if (status.textContent.includes("successful") || status.textContent.includes("failed")) {
+                   status.textContent = 'Upload another document to add to the knowledge base.';
+                }
+            }, 3000); // Revert message after 3 seconds
+        }
+        // --- End of new logic ---
     }
-    }
+}
 
 async function askQuestion() {
     const input = document.getElementById('chatInput');
-    const answerContainer = document.getElementById('answerContainer'); // We'll display history here
+    const answerContainer = document.getElementById('answerContainer');
+    const sourceContainer = document.getElementById('sourceContainer');
+    const askButton = document.getElementById('askButton');
     const query = input.value;
 
     if (!query) return;
 
-    // Display user's question immediately
-    answerContainer.innerHTML += `<p><strong>You:</strong> ${query}</p>`;
-    answerContainer.innerHTML += `<p><strong>Bot:</strong> Thinking...</p>`;
-    input.value = ''; // Clear input
+    // --- Create and display the user's message ---
+    const userMessage = document.createElement('div');
+    userMessage.className = 'message user';
+    userMessage.textContent = query;
+    answerContainer.appendChild(userMessage);
+    input.value = '';
+
+    // --- Create and display the bot's "thinking" indicator ---
+    const botThinkingMessage = document.createElement('div');
+    botThinkingMessage.className = 'message bot';
+    botThinkingMessage.innerHTML = `
+        <div class="typing-indicator">
+            <span></span><span></span><span></span>
+        </div>
+    `;
+    answerContainer.appendChild(botThinkingMessage);
+    
+    // --- Scroll to the bottom of the chat ---
+    answerContainer.scrollTop = answerContainer.scrollHeight;
+
+    // --- Disable the ask button while the bot is thinking ---
+    askButton.disabled = true;
 
     try {
         const response = await fetch(`${API_URL}/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // MODIFIED: Send the query AND the current chat history
             body: JSON.stringify({ 
                 query: query,
                 chat_history: chatHistory 
@@ -77,53 +129,40 @@ async function askQuestion() {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Server responded with ${response.status}: ${errorText || response.statusText}`);
         }
 
         const result = await response.json();
         
-        // Update the "Thinking..." message with the real answer
-        answerContainer.lastElementChild.innerHTML = `<strong>Bot:</strong> ${result.answer}`;
-        // UPDATE THE SOURCE DISPLAY
+        // --- Update the "thinking" message with the real answer ---
+        botThinkingMessage.innerHTML = result.answer.replace(/\n/g, '<br>');
+
+        // --- Update the source display ---
         sourceContainer.innerHTML = ''; // Clear previous sources
-        result.sources.forEach((source, index) => {
-            sourceContainer.innerHTML += `
-                <div>
-                    <strong>Source ${index + 1}:</strong>
+        if (result.sources && result.sources.length > 0) {
+            result.sources.forEach((source, index) => {
+                const sourceDiv = document.createElement('div');
+                sourceDiv.innerHTML = `
+                    <strong>Source ${index + 1} (from ${source.metadata.source || 'N/A'}):</strong>
                     <p>${source.content.replace(/\n/g, '<br>')}</p>
-                </div>
-                <hr>`;
-        });
-        // MODIFIED: Update our global chat history with the latest turn
-        // The API returns a list of LangChain message objects, we need to adapt it
-        // A simple way is to just keep our own track
+                `;
+                sourceContainer.appendChild(sourceDiv);
+            });
+        } else {
+            sourceContainer.innerHTML = "<p>No specific sources were retrieved for this answer.</p>";
+        }
+        
+        // --- Update chat history ---
         chatHistory.push([query, result.answer]);
 
     } catch (error) {
-        answerContainer.lastElementChild.innerHTML = `<strong>Bot:</strong> Failed to get an answer. ${error}`;
+        console.error('An error occurred during chat:', error);
+        botThinkingMessage.textContent = `Sorry, an error occurred: ${error.message}`;
+    } finally {
+        // --- Re-enable the ask button ---
+        askButton.disabled = false;
+        // --- Scroll to the bottom again after the response ---
+        answerContainer.scrollTop = answerContainer.scrollHeight;
     }
 }
-
-// async function askQuestion() {
-//     const input = document.getElementById('chatInput');
-//     const answerP = document.getElementById('answer');
-//     const query = input.value;
-
-//     if (!query) {
-//         answerP.textContent = 'Please enter a question.';
-//         return;
-//     }
-
-//     answerP.textContent = 'Thinking...';
-//     try {
-//         const response = await fetch(`${API_URL}/chat`, {
-//             method: 'POST',
-//             headers: { 'Content-Type': 'application/json' },
-//             body: JSON.stringify({ query: query }),
-//         });
-//         const result = await response.json();
-//         answerP.textContent = result.answer;
-//     } catch (error) {
-//         answerP.textContent = 'Failed to get an answer.';
-//     }
-// }
