@@ -4,7 +4,8 @@ import shutil
 import os
 from typing import List, Tuple
 from langchain_core.messages import HumanMessage, AIMessage
-
+import traceback
+import sys
 
 # Import our new chain object
 # from app.core.rag_core import *
@@ -28,21 +29,26 @@ class WebsiteRequest(BaseModel):
 
 @router.post("/upload", status_code=201)
 async def upload_document(file: UploadFile = File(...)):
-    """Endpoint to upload a PDF file for ingestion."""
-    if not file.filename.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
-    
+
     temp_file_path = f"temp_{file.filename}"
     with open(temp_file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-        
-    try:
-        rag_core.ingest_documents(temp_file_path)
-    finally:
-        os.remove(temp_file_path) # Clean up the temp file
-        
-    return {"message": f"File '{file.filename}' ingested successfully."}
 
+    try:
+        if file.filename.lower().endswith(".pdf"):
+            rag_core.ingest_documents(temp_file_path)
+            return {"message": f"PDF '{file.filename}' ingested successfully."}
+        elif file.filename.lower().endswith(".csv"):
+            rag_core.ingest_structured_data(temp_file_path)
+            return {"message": f"CSV '{file.filename}' ingested successfully."}
+        else:
+            print(f"Unsupported file type: {file.filename}")
+            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a PDF or CSV.")
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
+    finally:
+        os.remove(temp_file_path)
 @router.post("/chat")
 async def chat_with_rag(request: ChatRequest):
 
@@ -97,3 +103,13 @@ async def ingest_website_endpoint(request: WebsiteRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to ingest website: {str(e)}")
+    
+@router.post("/reset", status_code=200)
+async def reset_knowledge_base():
+    """Endpoint to reset the knowledge base."""
+    try:
+        rag_core.reset_database()
+        return {"message": "Knowledge base has been reset successfully."}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to reset database: {str(e)}")

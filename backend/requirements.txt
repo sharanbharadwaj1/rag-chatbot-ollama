@@ -17,3 +17,4 @@ langchain-chroma
 langchain-ollama
 langchain-huggingface
 beautifulsoup4
+requests

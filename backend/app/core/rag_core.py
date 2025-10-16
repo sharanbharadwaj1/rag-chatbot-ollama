@@ -14,15 +14,32 @@ from langchain.chains.history_aware_retriever import create_history_aware_retrie
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 # from app.core.prompts import rag_prompt
 
-# --- Initialize Core Components ---
-vector_db_path = "local_chroma_db"
-client = chromadb.PersistentClient(path=vector_db_path)
+import csv # <-- ADD THIS
+from langchain_core.documents import Document
 
+# --- Initialize Core Components ---
+# vector_db_path = "local_chroma_db"
+# client = chromadb.PersistentClient(path=vector_db_path)
+client = None
+vectorstore = None
+conversational_chain = None
+# embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+vector_db_path = "local_chroma_db"
 
 rag_prompt = '''
 """
  ## ROLE & GOAL ##
-You are an advanced AI assistant specializing in information retrieval and synthesis. Your primary goal is to provide accurate, concise, and helpful answers to user queries by synthesizing information exclusively from the provided context. You are forbidden from using any prior knowledge or information outside of this context.
+You are an expert assistant for question-answering tasks.
+Your task is to answer the user's question based ONLY on the provided context.
+
+Read the retrieved context carefully and use them to construct your answer.
+
+### IMPORTANT INSTRUCTIONS ###
+
+- Answer the question using ONLY the information found in the context below.
+- If the context does not contain the information needed to answer the question, you MUST say "I'm sorry, the provided documents do not contain the answer to that question."
+- DO NOT use any of your pre-existing knowledge or any external information.
+- Keep your answer concise.
 
 ### CORE INSTRUCTIONS ###
 1.  **Grounding:** Your entire response MUST be based solely on the information contained within the `## Context ##` provided below. Do not add information that is not present in the text.
@@ -190,3 +207,76 @@ def get_conversational_rag_chain(retriever):
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
     
     return rag_chain
+
+
+def ingest_structured_data(file_path: str):
+    """
+    Dynamically loads data from any CSV file, formats each row into a sentence,
+    and ADDS it to the persistent vector store.
+    """
+    global vectorstore, conversational_chain
+    
+    print(f"Loading structured data from: {file_path}")
+    documents = []
+    with open(file_path, mode='r', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            # Dynamically create a sentence from all columns in the row
+            content = ". ".join([f"{key}: {value}" for key, value in row.items()])
+            
+            # Create a metadata dictionary from the row's data
+            metadata = row.copy()
+            metadata["source"] = os.path.basename(file_path)
+
+            doc = Document(page_content=content, metadata=metadata)
+            documents.append(doc)
+
+    print(f"Adding {len(documents)} new records from CSV to ChromaDB...")
+    
+    if vectorstore:
+        vectorstore.add_documents(documents=documents)
+    else:
+        vectorstore = Chroma.from_documents(
+            documents=documents, 
+            embedding=embeddings,
+            client=client,
+            collection_name="langchain"
+        )
+    
+    print("✅ Structured data added successfully!")
+
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
+    conversational_chain = get_conversational_rag_chain(retriever)
+    print("✅ Conversational chain has been updated.")
+
+
+def initialize_database():
+    """Initializes the ChromaDB client."""
+    global client
+    print("Initializing ChromaDB client...")
+    client = chromadb.PersistentClient(path=vector_db_path)
+    print("✅ ChromaDB client initialized.")
+
+def reset_database():
+    """
+    Deletes the vector store from disk and resets the in-memory state.
+    """
+    global vectorstore, conversational_chain, client
+    
+    # Reset in-memory variables
+    vectorstore = None
+    conversational_chain = None
+    client = None # Reset client to ensure clean state
+    
+    # Delete the on-disk database
+    if os.path.exists(vector_db_path):
+        print(f"Deleting vector database at: {vector_db_path}")
+        shutil.rmtree(vector_db_path)
+    
+    # Re-initialize to create a fresh, empty state
+    os.makedirs(vector_db_path, exist_ok=True)
+    initialize_database()
+    print("✅ Database reset successfully.")
+
+# Also, call initialize_database() once when the module is first loaded
+initialize_database()

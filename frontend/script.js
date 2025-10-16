@@ -241,3 +241,36 @@ async function ingestWebsite() {
         urlInput.disabled = false;
     }
 }
+
+async function resetKnowledgeBase() {
+    // Ask for confirmation before deleting
+    if (!confirm("Are you sure you want to reset the entire knowledge base? All uploaded documents will be deleted.Fresh upload is required.")) {
+        return;
+    }
+
+    const status = document.getElementById('uploadStatus'); // We can reuse the upload status for feedback
+    const answerContainer = document.getElementById('answerContainer');
+
+    try {
+        status.textContent = "Resetting knowledge base...";
+
+        const response = await fetch(`${API_URL}/reset`, {
+            method: 'POST',
+        });
+
+        if (!response.ok) {
+            throw new Error("Server failed to reset the database.");
+        }
+
+        const result = await response.json();
+        status.textContent = result.message;
+
+        // Clear the frontend state as well
+        answerContainer.innerHTML = '';
+        chatHistory = [];
+
+    } catch (error) {
+        console.error('Error resetting knowledge base:', error);
+        status.textContent = `Error: ${error.message}`;
+    }
+}
