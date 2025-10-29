@@ -257,26 +257,50 @@ def initialize_database():
     client = chromadb.PersistentClient(path=vector_db_path)
     print("✅ ChromaDB client initialized.")
 
+# def reset_database():
+#     """
+#     Deletes the vector store from disk and resets the in-memory state.
+#     """
+#     global vectorstore, conversational_chain, client
+    
+#     # Reset in-memory variables
+#     vectorstore = None
+#     conversational_chain = None
+#     client = None # Reset client to ensure clean state
+    
+#     # Delete the on-disk database
+#     if os.path.exists(vector_db_path):
+#         print(f"Deleting vector database at: {vector_db_path}")
+#         shutil.rmtree(vector_db_path)
+    
+#     # Re-initialize to create a fresh, empty state
+#     os.makedirs(vector_db_path, exist_ok=True)
+#     initialize_database()
+#     print("✅ Database reset successfully.")
+
+# # Also, call initialize_database() once when the module is first loaded
+# initialize_database()
+
+
 def reset_database():
     """
-    Deletes the vector store from disk and resets the in-memory state.
+    Resets the ChromaDB database using the client's reset method and
+    clears the in-memory state.
     """
     global vectorstore, conversational_chain, client
     
-    # Reset in-memory variables
+    print("Resetting ChromaDB...")
+    
+    # Use the official ChromaDB client method to reset the database.
+    # This is safer than manually deleting files.
+    if client:
+        client.reset()
+    
+    # Reset the in-memory LangChain objects
     vectorstore = None
     conversational_chain = None
-    client = None # Reset client to ensure clean state
     
-    # Delete the on-disk database
-    if os.path.exists(vector_db_path):
-        print(f"Deleting vector database at: {vector_db_path}")
-        shutil.rmtree(vector_db_path)
-    
-    # Re-initialize to create a fresh, empty state
-    os.makedirs(vector_db_path, exist_ok=True)
+    # Re-initialize the client to be ready for the next upload
     initialize_database()
+    
     print("✅ Database reset successfully.")
-
-# Also, call initialize_database() once when the module is first loaded
-initialize_database()
