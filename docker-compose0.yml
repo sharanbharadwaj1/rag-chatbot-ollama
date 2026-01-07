@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  rag-service:
+    build: ./backend
+    ports:
+      - "8000:8080"
+    volumes:
+      # This keeps your database data safe on your computer
+      - ./local_chroma_db:/app/local_chroma_db
+      # This keeps the downloaded Ollama models safe in a Docker volume
+      - ollama_models:/root/.ollama
+    # For GPU acceleration (optional, requires NVIDIA container toolkit)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+volumes:
+  ollama_models:

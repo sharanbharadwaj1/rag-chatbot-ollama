@@ -1,23 +1,20 @@
-version: '3.8'
-
 services:
   rag-service:
-    build: ./backend
+    build: ./backend # Build context is the backend folder
     ports:
       - "8000:8080"
+      - "11434:11434"
+    
+    # --- Forces a working DNS to fix network timeouts ---
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
     volumes:
-      # This keeps your database data safe on your computer
-      - ./local_chroma_db:/app/local_chroma_db
-      # This keeps the downloaded Ollama models safe in a Docker volume
       - ollama_models:/root/.ollama
-    # For GPU acceleration (optional, requires NVIDIA container toolkit)
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+      - ./local_chroma_db:/app/local_chroma_db
+    environment:
+      - OLLAMA_BASE_URL=http://localhost:11434
 
 volumes:
   ollama_models:

@@ -1,0 +1,16 @@
+# Activate the venv
+.\eval_venv\Scripts\activate
+
+# Install the packages
+pip install requests==2.32.3
+pip install pandas==2.2.1
+pip install datasets
+pip install ragas==0.1.9
+
+# Install the *exact same* compatible LangChain versions
+pip install langchain-core==0.1.52
+pip install langchain-ollama==0.1.0  # <--- This specific version is compatible
+
+# Install packages needed for the local_embeddings fix in evaluate.py
+pip install langchain-community==0.0.38
+pip install sentence-transformers==2.7.0

@@ -1,0 +1,3 @@
+conda activate chatbot_env
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+conda activate eval_env

@@ -2,20 +2,43 @@ import os
 import shutil
 import chromadb # NEW IMPORT
 
-from langchain_community.llms import Ollama
+import google.generativeai as genai # New import
+
+from dotenv import load_dotenv  # <-- ADD THIS
+import sys
+# ... other imports
+# from langchain.retrievers import EnsembleRetriever
+# from langchain_community.retrievers import BM25Retriever
+# from langchain_community.llms import Ollama
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader,WebBaseLoader # <-- Add WebBaseLoader
-
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.history_aware_retriever import create_history_aware_retriever
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 # from app.core.prompts import rag_prompt
 
+# # ... other imports
+# from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
+# from langchain_community.cross_encoders import HuggingFaceBgeReranker
+# # ... other imports
+# from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
+# from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+# # ... other imports
+# from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
+# from langchain.retrievers.document_compressors.cross_encoder_rerank import CrossEncoderReranker
+# from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+
+# ... other imports
+from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors.cross_encoder_rerank import CrossEncoderReranker
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder # <-- ADD THIS
 import csv # <-- ADD THIS
 from langchain_core.documents import Document
+load_dotenv()
 
 # --- Initialize Core Components ---
 # vector_db_path = "local_chroma_db"
@@ -76,10 +99,13 @@ print("✅ Embedding model loaded.")
 
 # llm = Ollama(model="gemma:2b")
 # llm = Ollama(model="tinyllama")
-llm = Ollama(model="gemma:2b-instruct-q4_0") # Use the quantized model
-
-
-
+# llm = Ollama(model="gemma:2b-instruct-q4_0") # Use the quantized model
+print("Connecting to Google Gemini API...")
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash", # Use the fast and powerful Flash model
+    google_api_key=os.getenv("GOOGLE_API_KEY")
+)
+print("✅ Connected to Gemini.")
 print("✅ LLM model loaded.")
 
 # IMPORTANT: Initialize global variables to None.
@@ -123,8 +149,10 @@ def ingest_website(url: str):
 
     # Update the conversational_chain to use the retriever with the new data
     retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
-    conversational_chain = get_conversational_rag_chain(retriever)
+    update_retriever() 
     print("✅ Conversational chain has been updated with the new retriever.")
+    # conversational_chain = get_conversational_rag_chain(retriever)
+    # print("✅ Conversational chain has been updated with the new retriever.")
 
 def ingest_documents(file_path: str):
     """
@@ -165,9 +193,13 @@ def ingest_documents(file_path: str):
     print("✅ Documents added successfully!")
 
     # 3. Update the conversational_chain to use the retriever with the new data
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
-    conversational_chain = get_conversational_rag_chain(retriever)
+    # retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
+    # conversational_chain = get_conversational_rag_chain(retriever)
+    # print("✅ Conversational chain has been updated with the new retriever.")
+
+    update_retriever() 
     print("✅ Conversational chain has been updated with the new retriever.")
+
     print(f"--- CHECKPOINT 1 [AFTER INGEST] --- Type of conversational_chain is: {type(conversational_chain)}")
 
 
@@ -245,9 +277,12 @@ def ingest_structured_data(file_path: str):
     
     print("✅ Structured data added successfully!")
 
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
-    conversational_chain = get_conversational_rag_chain(retriever)
-    print("✅ Conversational chain has been updated.")
+    # retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
+    # conversational_chain = get_conversational_rag_chain(retriever)
+    # print("✅ Conversational chain has been updated.")
+
+    update_retriever() 
+    print("✅ Conversational chain has been updated with the new retriever.")
 
 
 def initialize_database():
@@ -304,3 +339,41 @@ def reset_database():
     initialize_database()
     
     print("✅ Database reset successfully.")
+
+
+def update_retriever():
+    """
+    Re-creates the retriever pipeline with a local Re-Ranker
+    and updates the conversational chain.
+    """
+    global conversational_chain, vectorstore
+
+    if vectorstore is None:
+        print("Vectorstore not initialized. Cannot update retriever.")
+        return
+
+    print("Updating retriever pipeline with LOCAL RE-RANKER...")
+
+    # 1. Base Retriever (Our simple, working baseline)
+    # Retrieve 10 docs so the re-ranker has material to sort.
+    base_retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
+
+    # 2. Initialize the Cross-Encoder Model
+    # We load the model directly from the sentence_transformers library.
+    print("Loading BGE-Reranker model (from sentence-transformers)...")
+    model = HuggingFaceCrossEncoder(model_name='BAAI/bge-reranker-base')
+    print("✅ Reranker model loaded.")
+
+    # 3. Create the LangChain Compressor
+    # We pass the model to the generic CrossEncoderReranker compressor.
+    compressor = CrossEncoderReranker(model=model, top_n=3)
+
+    # 4. Create the final Compression Retriever
+    compression_retriever = ContextualCompressionRetriever(
+        base_compressor=compressor,
+        base_retriever=base_retriever
+    )
+
+    # 5. Create the new conversational chain
+    conversational_chain = get_conversational_rag_chain(compression_retriever)
+    print("✅ Conversational chain updated with Re-ranker.")

@@ -1,27 +1,40 @@
-# Start from the official Ollama image
-FROM ollama/ollama:latest
+# syntax=docker/dockerfile:1.4
+# Use a slim, fast-to-download Python image
+FROM python:3.10-slim
 
-# Set up a working directory inside the container
+# Install system dependencies (curl for Ollama)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Ollama
+RUN curl -L https://ollama.com/download/ollama-linux-amd64 -o /usr/bin/ollama && chmod +x /usr/bin/ollama
+
 WORKDIR /app
 
-# Install Python and Pip, which are needed to run our backend
-RUN apt-get update && apt-get install -y python3 python3-pip
+# --- This is the new, fast way ---
 
-# Copy the Python requirements file first
+# 1. Install uv (the fast installer)
+RUN pip install uv
+
+# 2. Copy *only* the requirements file
 COPY ./requirements.txt .
 
-# Install all of our Python dependencies, bypassing the system protection
-RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
+# 3. Install packages using uv AND a cache mount
+# This line tells Docker to keep a cache at /root/.cache
+# Subsequent builds will re-use this cache and be much faster.
+RUN --mount=type=cache,target=/root/.cache \
+    uv pip install --no-cache -r requirements.txt --system
 
-# Now, copy the rest of our backend application code
-COPY ./app ./app
-COPY ./start.sh .
+# --- End of new section ---
 
-# Make our startup script executable
+# Copy the rest of your application code
+COPY ./app /app/app
+COPY ./start.sh /app/start.sh
+COPY ./frontend /app/frontend  # This works now
+
 RUN chmod +x /app/start.sh
 
-# Tell Docker that our application will listen on port 8080
-EXPOSE 8080
+EXPOSE 8080 11434
 
-# THE FIX: Set our script as the main command for the container
 ENTRYPOINT ["/app/start.sh"]
