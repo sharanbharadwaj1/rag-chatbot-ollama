@@ -1,4 +1,4 @@
-# Local RAG Chatbot with Ollama and FastAPI
+# Advanced RAG Chatbot with Gemini and FastAPI along with Re Ranking Methods
 
 This project is a complete, self-contained Retrieval-Augmented Generation (RAG) chatbot. It allows a user to upload a PDF document and ask questions about its content. The entire application, including the AI model, runs locally.
 
@@ -8,13 +8,14 @@ This project is a complete, self-contained Retrieval-Augmented Generation (RAG) 
 - **Conversational Q&A:** Ask questions about the document in a conversational manner.
 - **Chat History:** The chatbot remembers the context of the current conversation.
 - **Source Display:** Shows the exact text chunks from the document used to generate the answer.
-- **Dockerized:** The entire backend, including the Ollama LLM, is containerized for easy setup and portability.
+- **Dockerized:** The entire backend, including the LLM, is containerized for easy setup and portability.
+- **ReRanking:** Re ranking the Source doucments for better retrieval of information. 
 
 ## 🛠️ Tech Stack
 
 - **Backend:** FastAPI (Python)
 - **AI/RAG Core:** LangChain
-- **LLM Server:** Ollama (running `gemma:2b`)
+- **LLM Server:** Gemini 2.5 flash
 - **Vector Database:** ChromaDB (local, file-based)
 - **Containerization:** Docker, Docker Compose
 - **Frontend:** Plain HTML, CSS, and JavaScript
@@ -43,7 +44,7 @@ This is the simplest and most reliable way to run the entire application.
 2.  **Ensure Docker Desktop is Running.**
 
 3.  **Build and Run the Container:**
-    From the project's root directory, run the following command. This will build the Docker image (which includes Python, Ollama, and all dependencies) and start the service.
+    From the project's root directory, run the following command. This will build the Docker image (which includes Pythonband all dependencies) and start the service.
     ```bash
     docker-compose up --build
     ```
@@ -93,11 +94,7 @@ This method requires manually managing the backend, frontend, and Ollama servers
     python -m http.server 8081
     ```
 
-3.  **Ollama Setup (in a new terminal):**
-    Ensure the Ollama desktop application is running, or run `ollama serve` from a terminal. You must also have the required model downloaded:
-    ```bash
-    ollama pull gemma:2b-instruct-q4_0
-    ```
+
 
 
 
