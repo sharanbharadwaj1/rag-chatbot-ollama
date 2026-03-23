@@ -1,0 +1,23 @@
+[
+  {
+    "policy": "Policy A",
+    "claim_id": "CLM001",
+    "customer": "John Doe",
+    "amount": 5000,
+    "type": "Auto"
+  },
+  {
+    "policy": "Policy B",
+    "claim_id": "CLM002",
+    "customer": "Jane Smith",
+    "amount": 12000,
+    "type": "Health"
+  },
+  {
+    "policy": "Policy A",
+    "claim_id": "CLM003",
+    "customer": "John Doe",
+    "amount": 3000,
+    "type": "Auto"
+  }
+]
