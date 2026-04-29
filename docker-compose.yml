@@ -1,20 +1,16 @@
 services:
-  rag-service:
-    build: ./backend # Build context is the backend folder
+  rag-chatbot-gemini:
+    build:
+      context: ./backend
+    container_name: rag-chatbot-gemini-local
     ports:
-      - "8000:8080"
-      - "11434:11434"
-    
-    # --- Forces a working DNS to fix network timeouts ---
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
-
-    volumes:
-      - ollama_models:/root/.ollama
-      - ./local_chroma_db:/app/local_chroma_db
+      - "8080:8080"
     environment:
-      - OLLAMA_BASE_URL=http://localhost:11434
-
-volumes:
-  ollama_models:
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-AIzaSyCnt_xX7GtpyKCzBKurevhOIUneojruu0c}
+      VECTOR_DB_PATH: /mnt/chroma/local_chroma_db
+      CHROMA_COLLECTION_NAME: ${CHROMA_COLLECTION_NAME:-langchain}
+      GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+    volumes:
+      - ./local_chroma_db:/mnt/chroma/local_chroma_db
+    restart: unless-stopped
