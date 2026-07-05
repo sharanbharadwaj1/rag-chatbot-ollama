@@ -18,27 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// function updateKnowledgeBaseList() {
-        
-//     console.log("Updating knowledge base list with sources:", knowledgeBaseSources);
 
-//     const listContainer = document.getElementById('knowledgeBaseList');
-//     if (knowledgeBaseSources.length === 0) {
-//         listContainer.innerHTML = '<ul><li>No sources loaded yet.</li></ul>';
-//         return;
-//     }
-
-//     const ul = document.createElement('ul');
-//     knowledgeBaseSources.forEach(sourceName => {
-//         const li = document.createElement('li');
-//         // Add a small icon based on the source type
-//         const icon = sourceName.toLowerCase().endsWith('.pdf') ? '📄' : '🌐';
-//         li.textContent = `${icon} ${sourceName}`;
-//         ul.appendChild(li);
-//     });
-//     listContainer.innerHTML = '';
-//     listContainer.appendChild(ul);
-// }
 
 // To something like this (using the URL you copied):
 // const API_URL = "https://zqdv8lvl-8000.inc1.devtunnels.ms/api";

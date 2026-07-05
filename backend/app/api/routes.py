@@ -6,9 +6,6 @@ from typing import List, Tuple
 from langchain_core.messages import HumanMessage, AIMessage
 import traceback
 import sys
-
-# Import our new chain object
-# from app.core.rag_core import *
 from app.core import rag_core
 
 

@@ -13,7 +13,7 @@ import sys
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import PyPDFLoader,WebBaseLoader # <-- Add WebBaseLoader
+from langchain_community.document_loaders import PyPDFLoader,WebBaseLoader 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
@@ -21,18 +21,7 @@ from langchain.chains.history_aware_retriever import create_history_aware_retrie
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 # from app.core.prompts import rag_prompt
 
-# # ... other imports
-# from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
-# from langchain_community.cross_encoders import HuggingFaceBgeReranker
-# # ... other imports
-# from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
-# from langchain_community.cross_encoders import HuggingFaceCrossEncoder
-# # ... other imports
-# from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
-# from langchain.retrievers.document_compressors.cross_encoder_rerank import CrossEncoderReranker
-# from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 
-# ... other imports
 from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors.cross_encoder_rerank import CrossEncoderReranker
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder # <-- ADD THIS
@@ -292,29 +281,7 @@ def initialize_database():
     client = chromadb.PersistentClient(path=vector_db_path)
     print("✅ ChromaDB client initialized.")
 
-# def reset_database():
-#     """
-#     Deletes the vector store from disk and resets the in-memory state.
-#     """
-#     global vectorstore, conversational_chain, client
-    
-#     # Reset in-memory variables
-#     vectorstore = None
-#     conversational_chain = None
-#     client = None # Reset client to ensure clean state
-    
-#     # Delete the on-disk database
-#     if os.path.exists(vector_db_path):
-#         print(f"Deleting vector database at: {vector_db_path}")
-#         shutil.rmtree(vector_db_path)
-    
-#     # Re-initialize to create a fresh, empty state
-#     os.makedirs(vector_db_path, exist_ok=True)
-#     initialize_database()
-#     print("✅ Database reset successfully.")
 
-# # Also, call initialize_database() once when the module is first loaded
-# initialize_database()
 
 
 def reset_database():
